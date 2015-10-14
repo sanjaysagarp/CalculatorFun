@@ -48,8 +48,8 @@ func divide(left: Int?, right: Int?) throws -> Int {
     return 0;
 }
 
-func mathOp(left: Int?, right: Int?, op: (Int, Int) -> Int) throws -> Int {
-    return op(left!,right!);
+func mathOp(left: Int?, right: Int?, op: (Int?, Int?) throws -> Int) throws -> Int {
+    return try op(left,right);
 }
 
 func add(arr: [Int]?) throws -> Int {
@@ -67,7 +67,7 @@ func add(arr: [Int]?) throws -> Int {
     return 0;
 }
 
-func multiplty(arr: [Int]?) throws -> Int {
+func multiply(arr: [Int]?) throws -> Int {
     do {
         try checkNilArray(arr);
         var result: Int = 1;
@@ -94,20 +94,21 @@ func count(arr: [Int]?) throws -> Int {
     return arr!.count;
 }
 
-
-
-
-func mathOp(arr: [Int]?, op: ([Int]) -> Int) throws -> Int {
-    return op(arr!);
+func mathOp(arr: [Int]?, op: ([Int])? throws -> Int) throws -> Int {
+    return try op(arr);
 }
 
+
 func add(p1: (x1: Int, y1: Int)?, p2: (x2: Int, y2: Int)?) throws -> (Int, Int) {
-    if (p1 == nil || p2 == nil) {
-        throw NumberError.InvalidPoint;
+    do {
+        try checkNilPoint(p1, p2: p2);
+        let x = try add(p1!.x1, right: p2!.x2);
+        let y = try add(p1!.y1, right: p2!.y2);
+        return (x,y);
+    } catch NumberError.InvalidPoint {
+        print("Nil Point Found");
     }
-    let x = try add(p1!.x1, right: p2!.x2);
-    let y = try add(p1!.y1, right: p2!.y2);
-    return (x,y);
+    return (0,0);
 }
 
 func subtract(p1: (x1: Int, y1: Int)?, p2: (x2: Int, y2: Int)?) throws -> (Int, Int) {
@@ -122,7 +123,6 @@ func subtract(p1: (x1: Int, y1: Int)?, p2: (x2: Int, y2: Int)?) throws -> (Int, 
     return (0,0);
 }
 
-//for ints
 func add(dictionary: [Int:Int]?) throws -> [Int:Int] {
     do {
         var sumX: Int = 0;
@@ -138,19 +138,14 @@ func add(dictionary: [Int:Int]?) throws -> [Int:Int] {
     return [0:0];
 }
 
-//for doubles
 func add(dictionary: [Double:Double]?) throws -> [Double:Double] {
     do {
         var sumX: Double = 0;
         var sumY: Double = 0;
         for (key, value) in dictionary! {
-            let x : Double? = key;
-            let y : Double? = value;
-            if x == nil || y == nil {
-                throw NumberError.NilEntryFound;
-            }
-            sumX += x!;
-            sumY += y!;
+            try checkNilEntry(Int(key), b: Int(value));
+            sumX += key;
+            sumY += value;
         }
         return [sumX:sumY];
     } catch NumberError.DictionaryIsNil {
@@ -159,7 +154,6 @@ func add(dictionary: [Double:Double]?) throws -> [Double:Double] {
     return [0:0];
 }
 
-//for ints
 func subtract(dictionary: [Int:Int]?) throws -> [Int:Int] {
     do {
         var subX: Int = 0;
@@ -182,30 +176,27 @@ func subtract(dictionary: [Int:Int]?) throws -> [Int:Int] {
     return [0:0];
 }
 
-//for doubles
 func subtract(dictionary: [Double:Double]?) throws -> [Double:Double] {
-    if (dictionary == nil) {
-        throw NumberError.DictionaryIsNil;
-    }
-    var subX: Double = 0;
-    var subY: Double = 0;
-    var first = true;
-    for (key, value) in dictionary! {
-        let x : Double? = key;
-        let y : Double? = value;
-        if x == nil || y == nil {
-            throw NumberError.NilEntryFound;
+    do {
+        var subX: Double = 0;
+        var subY: Double = 0;
+        var first = true;
+        for (key, value) in dictionary! {
+            try checkNilEntry(Int(key), b: Int(value));
+            if first {
+                subX = key;
+                subY = value;
+                first = false;
+            } else {
+                subX -= key;
+                subY -= value;
+            }
         }
-        if first {
-            subX = x!;
-            subY = y!;
-            first = false;
-        } else {
-            subX -= x!;
-            subY -= y!;
-        }
+        return [subX:subY];
+    } catch NumberError.DictionaryIsNil {
+        print("Dictionary is Nil");
     }
-    return [subX:subY];
+    return [0:0];
 }
 
 enum NumberError: ErrorType {
@@ -236,7 +227,7 @@ func checkNilArray(a: [Int]?) throws {
 }
 
 func checkNilPoint(p1: (x1: Int, y1: Int)?, p2: (x2: Int, y2: Int)?) throws {
-    if (p1 == nil || p2 == nil) {
+    if (p1 == nil || p2 == nil ) {
         throw NumberError.InvalidPoint;
     }
 }
@@ -247,11 +238,80 @@ func checkDictionary(dictionary: [Int:Int]?) throws {
     }
 }
 
-var a =  [
-    1.0:2,
-    3:2.1,
+
+// Function tests
+var a: Int = 1;
+
+var b: Int = 4;
+
+try print(add(a,right: b)); // 5
+
+try add(a,right: nil); // exception
+
+try print(subtract(b, right: a)); // 3
+
+try subtract(b, right: nil); // 3
+
+try print(multiply(2, right: 3)); // 6
+
+try multiply(nil, right: 3); // exception
+
+try print(divide(6, right: 2)); // 3
+
+try divide(6, right: nil); // exception
+
+let c = try mathOp(7, right: 2, op: add);
+print(c); // 9
+
+try mathOp(7, right: nil, op: add); // exception
+
+try print(add([1,2,6,4])); // 13
+
+try print(multiply([1,2,2,3])); // 12
+
+try print(count([1,1,1,1,1,1])); // 6
+
+let d = try mathOp([2,2,2,2], op: add);
+print(d); // 8
+
+try mathOp(nil, op: add) // exception
+
+var point1 = (1,2);
+
+var point2 = (3,2)
+
+try print(add(point1, p2: point2)); // (4,4)
+
+try print(subtract(point2, p2: point1)); // (2,0)
+
+try add(nil, p2: point2); // exception
+
+let x = [
+    1:3,
+    2:2,
+    3:6,
 ]
 
-try add(a);
+try print(add(x)); // [6:11]
+
+var n = [Int:Int]();
+try add(n); // exception
+
+try print(subtract(x)); // [-2:-7]
+
+let y = [
+    1.0:1.2,
+    2.1:3.5,
+    3:5,
+]
+
+try print(add(y)); // [6.1:9.7]
+
+try print(subtract(y)); // [-0.1:0.3]
+
+
+
+
+
 
 
